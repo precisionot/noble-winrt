@@ -66,6 +66,7 @@ private:
     Emit mEmit;
     RadioWatcher mWatcher;
     AdapterState mRadioState;
+    std::set<std::string> mAdvertiementServiceUUIDs;
     BluetoothLEAdvertisementWatcher mAdvertismentWatcher;
     winrt::event_revoker<IBluetoothLEAdvertisementWatcher> mReceivedRevoker;
     winrt::event_revoker<IBluetoothLEAdvertisementWatcher> mStoppedRevoker;

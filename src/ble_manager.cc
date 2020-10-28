@@ -73,13 +73,27 @@ bool CHECK_RESULT(T _result)
     else                          \
         for (auto&& object : _vector)
 
+bool SERVICEIDINTERSECT(
+    std::set<std::string>& filterServiceIds,
+    winrt::Windows::Foundation::Collections::IVector<winrt::guid>& advertServiceIds) 
+{
+    for (auto const& i : advertServiceIds)
+    {
+        if(find(begin(filterServiceIds), end(filterServiceIds), toStr(i)) != end(filterServiceIds)){
+            return true;
+        }
+    }
+    return false;
+}
+
 BLEManager::BLEManager(const Napi::Value& receiver, const Napi::Function& callback)
 {
     mRadioState = AdapterState::Initial;
     mEmit.Wrap(receiver, callback);
     auto onRadio = std::bind(&BLEManager::OnRadio, this, std::placeholders::_1);
     mWatcher.Start(onRadio);
-    mAdvertismentWatcher.ScanningMode(BluetoothLEScanningMode::Active);
+    // mAdvertismentWatcher.ScanningMode(BluetoothLEScanningMode::Active);
+    mAdvertismentWatcher.ScanningMode(BluetoothLEScanningMode::Passive);
     auto onReceived  = bind2(this, &BLEManager::OnScanResult);
     mReceivedRevoker = mAdvertismentWatcher.Received(winrt::auto_revoke, onReceived);
     auto onStopped   = bind2(this, &BLEManager::OnScanStopped);
@@ -123,16 +137,17 @@ void BLEManager::OnRadio(Radio& radio)
 void BLEManager::Scan(const std::vector<winrt::guid>& serviceUUIDs, bool allowDuplicates)
 {
     mAdvertismentMap.clear();
+    mAdvertiementServiceUUIDs.clear();
     mAllowDuplicates = allowDuplicates;
     BluetoothLEAdvertisementFilter filter = BluetoothLEAdvertisementFilter();
     BluetoothLEAdvertisement advertisment = BluetoothLEAdvertisement();
-    auto& services = advertisment.ServiceUuids();
+    //auto& services = advertisment.ServiceUuids();
     for (auto& uuid : serviceUUIDs)
     {
-        services.Append(uuid);
+        mAdvertiementServiceUUIDs.insert(toStr(uuid));
     }
-    filter.Advertisement(advertisment);
-    mAdvertismentWatcher.AdvertisementFilter(filter);
+    //filter.Advertisement(advertisment);
+    //mAdvertismentWatcher.AdvertisementFilter(filter);
     mAdvertismentWatcher.Start();
     mEmit.ScanState(true);
 }
@@ -140,6 +155,14 @@ void BLEManager::Scan(const std::vector<winrt::guid>& serviceUUIDs, bool allowDu
 void BLEManager::OnScanResult(BluetoothLEAdvertisementWatcher watcher,
                               const BluetoothLEAdvertisementReceivedEventArgs& args)
 {
+    auto advertisement = args.Advertisement();
+    if (mAdvertiementServiceUUIDs.size()) {
+        auto serviceIds = advertisement.ServiceUuids();
+        if (!SERVICEIDINTERSECT(mAdvertiementServiceUUIDs, serviceIds)) {
+            return;
+        }
+    }
+
     uint64_t bluetoothAddress = args.BluetoothAddress();
     std::string uuid = formatBluetoothUuid(bluetoothAddress);
     int16_t rssi = args.RawSignalStrengthInDBm();
@@ -147,7 +170,9 @@ void BLEManager::OnScanResult(BluetoothLEAdvertisementWatcher watcher,
 
     if (mDeviceMap.find(uuid) == mDeviceMap.end())
     {
-        mAdvertismentMap.insert(uuid);
+        if (!mAllowDuplicates) { //save memory
+            mAdvertismentMap.insert(uuid);
+        }
         auto peripheral =
             PeripheralWinrt(bluetoothAddress, advertismentType, rssi, args.Advertisement());
         mEmit.Scan(uuid, rssi, peripheral);
@@ -159,7 +184,9 @@ void BLEManager::OnScanResult(BluetoothLEAdvertisementWatcher watcher,
         peripheral.Update(rssi, args.Advertisement());
         if (mAllowDuplicates || mAdvertismentMap.find(uuid) == mAdvertismentMap.end())
         {
-            mAdvertismentMap.insert(uuid);
+            if (!mAllowDuplicates) { //save memory
+                mAdvertismentMap.insert(uuid);
+            }
             mEmit.Scan(uuid, rssi, peripheral);
         }
     }
