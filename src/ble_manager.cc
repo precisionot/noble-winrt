@@ -149,14 +149,14 @@ void BLEManager::OnScanResult(BluetoothLEAdvertisementWatcher watcher,
     {
         mAdvertismentMap.insert(uuid);
         auto peripheral =
-            PeripheralWinrt(bluetoothAddress, advertismentType, rssi, args.Advertisement());
+            PeripheralWinrt(bluetoothAddress, advertismentType, rssi, advertisement);
         mEmit.Scan(uuid, rssi, peripheral);
         mDeviceMap.emplace(std::make_pair(uuid, std::move(peripheral)));
     }
     else
     {
         PeripheralWinrt& peripheral = mDeviceMap[uuid];
-        peripheral.Update(rssi, args.Advertisement());
+        peripheral.Update(rssi, advertisement, advertismentType);
         if (mAllowDuplicates || mAdvertismentMap.find(uuid) == mAdvertismentMap.end())
         {
             mAdvertismentMap.insert(uuid);
