@@ -295,8 +295,14 @@ bool BLEManager::DiscoverServices(const std::string& uuid,
     CHECK_DEVICE();
     IFDEVICE(device, uuid)
     {
+        // TODO, neither of these operations insert the discovered service(s) into the cache!?
+        // That is probably fine as windows will cache? Local cache is probably not needed?
         auto completed = bind2(this, &BLEManager::OnServicesDiscovered, uuid, serviceUUIDs);
-        device.GetGattServicesAsync(BluetoothCacheMode::Uncached).Completed(completed);
+        if (serviceUUIDs.empty() || serviceUUIDs.size() > 1) { 
+            device.GetGattServicesAsync(BluetoothCacheMode::Uncached).Completed(completed);
+        } else if (serviceUUIDs.size() == 1) {
+            device.GetGattServicesForUuidAsync(serviceUUIDs.at(0), BluetoothCacheMode::Uncached).Completed(completed);
+        }
         return true;
     }
 }
