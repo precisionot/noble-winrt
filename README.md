@@ -8,13 +8,14 @@
 * Doesn't crash like `noble-uwp` when running for days.
 * Fixed the service uuid filter used in scan start.
 * Faster discovery when only requesting one service. Old versions of noble-winrt and noble-uwp would request all services over BLE and then cut down to one, instead of only requesting one in the first place.
-* Fix the connectable flag to update on every adcertisement. Old versions would use the value from the first advert, and never update. 
+* Fix the connectable flag to update on every advertisement. Old versions would use the value from the first advert, and never update. 
 
 ## Todos
 * Eliminate the local cache in this binding as windows has its own?
 https://github.com/Timeular/noble-winrt/issues/24
 * Be able to pass instant errors into noble. Currently this cant be done, and the user will just have to rely on timeouts.
 https://github.com/abandonware/noble/issues/135
+* Become an official binding that lives in abandonware repo?
 
 
 <br><br><br>
