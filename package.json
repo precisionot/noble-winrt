@@ -4,11 +4,12 @@
   "version": "0.0.7",
   "author": "gv@timeular.com",
   "contributors": [
-    "Yuriy Ackermann <yuriy@fidoalliance.org>"
+    "Yuriy Ackermann <yuriy@fidoalliance.org>",
+    "Tony Gutierrez"
   ],
   "license": "MIT",
   "repository": {
-    "url": "https://github.com/fido-alliance/noble-winrt.git"
+    "url": "https://github.com/tony-gutierrez/noble-winrt.git"
   },
   "main": "index.js",
   "gypfile": true,
@@ -31,6 +32,7 @@
     "test:bindings": "node --napi-modules ./test/test_binding.js",
     "test:battery": "node --napi-modules ./test/test_battery.js",
     "build:source": "node-gyp rebuild",
-    "build:dev": "node-gyp build --debug"
+    "build:dev": "node-gyp build --debug",
+    "prebuild": "prebuild -t 12.16.2 -t 15.0.0 -t 13.0.0 -t 14.15.0 -t 13.14.0 -t 10.23.0"
   }
 }
