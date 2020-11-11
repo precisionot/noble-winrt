@@ -54,8 +54,8 @@ bool CHECK_RESULT(T _result)
         auto _protError  = _result.ProtocolError();
         if (_commStatus != GattCommunicationStatus::Success) 
         {
-            LOGE("ommunication status: %d", _commStatus);
-            LOGE("protocol error: %d", _protError);
+            LOGE("Communication status: %d", _commStatus);
+            LOGE("Protocol error: %d", _protError);
             return false;
         }
     }
