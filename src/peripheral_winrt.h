@@ -23,7 +23,7 @@ class CachedCharacteristic
 {
 public:
     CachedCharacteristic() = default;
-    CachedCharacteristic(GattCharacteristic& c) : characteristic(c)
+    CachedCharacteristic(const GattCharacteristic& c) : characteristic(c)
     {
     }
 
@@ -35,7 +35,7 @@ class CachedService
 {
 public:
     CachedService() = default;
-    CachedService(GattDeviceService& s) : service(s)
+    CachedService(const GattDeviceService& s) : service(s)
     {
     }
 
