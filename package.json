@@ -1,12 +1,15 @@
 {
   "name": "noble-winrt",
   "description": "Noble (Node.js Bluetooth LE) bindings for Windows 10",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "author": "gv@timeular.com",
-  "contributors": ["Yuriy Ackermann <yuriy@fidoalliance.org>"],
+  "contributors": [
+    "Yuriy Ackermann <yuriy@fidoalliance.org>",
+    "Tony Gutierrez"
+  ],
   "license": "MIT",
   "repository": {
-    "url": "https://github.com/fido-alliance/noble-winrt.git"
+    "url": "https://github.com/tony-gutierrez/noble-winrt.git"
   },
   "main": "index.js",
   "gypfile": true,
@@ -15,16 +18,18 @@
   },
   "dependencies": {
     "@abandonware/noble": "git+https://github.com/abandonware/noble.git",
-    "bindings": "~1.3.0",
+    "bindings": "~1.5.0",
     "napi-thread-safe-callback": "0.0.6",
-    "node-addon-api": "^2.0.0",
-    "prebuild-install": "^5.0.0"
+    "node-addon-api": "^3.0.2",
+    "prebuild-install": "^6.0.0"
   },
   "scripts": {
     "install": "prebuild-install --force || node-gyp rebuild",
     "ci": "node --napi-modules ./test/ci_test.js",
     "test:bindings": "node --napi-modules ./test/test_binding.js",
     "test:battery": "node --napi-modules ./test/test_battery.js",
-    "build:source": "node-gyp rebuild"
+    "build:source": "node-gyp rebuild",
+    "build:dev": "node-gyp build --debug",
+    "prebuild": "prebuild -t 12.16.2 -t 15.0.0 -t 13.0.0 -t 14.15.0 -t 13.14.0 -t 10.23.0"
   }
 }

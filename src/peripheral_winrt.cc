@@ -19,9 +19,9 @@ PeripheralWinrt::PeripheralWinrt(uint64_t bluetoothAddress,
     address = formatBluetoothAddress(bluetoothAddress);
     // Random addresses have the two most-significant bits set of the 48-bit address.
     addressType = (bluetoothAddress >= 211106232532992) ? RANDOM : PUBLIC;
-    connectable = advertismentType == BluetoothLEAdvertisementType::ConnectableUndirected ||
-        advertismentType == BluetoothLEAdvertisementType::ConnectableDirected;
-    Update(rssiValue, advertisment);
+    // connectable = advertismentType == BluetoothLEAdvertisementType::ConnectableUndirected ||
+    //     advertismentType == BluetoothLEAdvertisementType::ConnectableDirected;
+    Update(rssiValue, advertisment, advertismentType);
 }
 
 PeripheralWinrt::~PeripheralWinrt()
@@ -32,16 +32,25 @@ PeripheralWinrt::~PeripheralWinrt()
     }
 }
 
-void PeripheralWinrt::Update(const int rssiValue, const BluetoothLEAdvertisement& advertisment)
+void PeripheralWinrt::Update(const int rssiValue, const BluetoothLEAdvertisement& advertisment, const BluetoothLEAdvertisementType& advertismentType)
 {
     std::string localName = ws2s(advertisment.LocalName().c_str());
+    // printf("CHECKING NAME ::UPDATE: %s \n", localName.c_str());
+
     if (!localName.empty())
     {
+        // printf("NAME IS NOT EMPTY\n");
         name = localName;
+    } else {
+        // printf("NAME IS EMPTY\n");
+        name = "UNKNOWN " + address;
     }
 
+    connectable = advertismentType == BluetoothLEAdvertisementType::ConnectableUndirected ||
+        advertismentType == BluetoothLEAdvertisementType::ConnectableDirected;
+
     manufacturerData.clear();
-    for (auto& ds : advertisment.DataSections())
+    for (const auto& ds : advertisment.DataSections())
     {
         if (ds.DataType() == BluetoothLEAdvertisementDataTypes::TxPowerLevel())
         {
@@ -63,7 +72,7 @@ void PeripheralWinrt::Update(const int rssiValue, const BluetoothLEAdvertisement
     }
 
     serviceUuids.clear();
-    for (auto& uuid : advertisment.ServiceUuids())
+    for (const auto& uuid : advertisment.ServiceUuids())
     {
         serviceUuids.push_back(toStr(uuid));
     }
@@ -86,15 +95,16 @@ void PeripheralWinrt::GetServiceFromDevice(
 {
     if (device.has_value())
     {
+        printf("PeripheralWinrt::GetServiceFromDevice - cached mode\n");
         device->GetGattServicesForUuidAsync(serviceUuid, BluetoothCacheMode::Cached)
             .Completed([=](IAsyncOperation<GattDeviceServicesResult> result, auto& status) {
                 if (status == AsyncStatus::Completed)
                 {
-                    auto& services = result.GetResults();
-                    auto& service = services.Services().First();
+                    const auto& services = result.GetResults();
+                    const auto& service = services.Services().First();
                     if (service.HasCurrent())
                     {
-                        GattDeviceService& s = service.Current();
+                        const GattDeviceService& s = service.Current();
                         cachedServices.insert(std::make_pair(serviceUuid, CachedService(s)));
                         callback(s);
                     }
@@ -140,15 +150,18 @@ void PeripheralWinrt::GetCharacteristicFromService(
         .Completed([=](IAsyncOperation<GattCharacteristicsResult> result, auto& status) {
             if (status == AsyncStatus::Completed)
             {
-                auto& characteristics = result.GetResults();
-                auto& characteristic = characteristics.Characteristics().First();
+                printf("Got GetCharacteristicFromService uncached\n");
+                const auto& characteristics = result.GetResults();
+                const auto& characteristic = characteristics.Characteristics().First();
                 if (characteristic.HasCurrent())
                 {
+                    printf("in hascurrent\n");
                     winrt::guid serviceUuid = service.Uuid();
                     CachedService& cachedService = cachedServices[serviceUuid];
-                    GattCharacteristic& c = characteristic.Current();
+                    const GattCharacteristic& c = characteristic.Current();
                     cachedService.characterisitics.insert(
                         std::make_pair(c.Uuid(), CachedCharacteristic(c)));
+                    printf("doing callback\n");
                     callback(c);
                 }
                 else
@@ -172,22 +185,27 @@ void PeripheralWinrt::GetCharacteristic(
     auto it = cachedServices.find(serviceUuid);
     if (it != cachedServices.end())
     {
+        printf("found cached service1\n");
         auto& cachedService = it->second;
         auto cit = cachedService.characterisitics.find(characteristicUuid);
         if (cit != cachedService.characterisitics.end())
         {
+            printf("found cached char2\n");
             callback(cit->second.characteristic);
         }
         else
         {
+            printf("getting char3\n");
             GetCharacteristicFromService(cachedService.service, characteristicUuid, callback);
         }
     }
     else
     {
+        printf("Getting service from device\n");
         GetServiceFromDevice(serviceUuid, [=](std::optional<GattDeviceService> service) {
             if (service)
             {
+                printf("got service from device, getting char from service\n");
                 GetCharacteristicFromService(*service, characteristicUuid, callback);
             }
             else
@@ -207,8 +225,8 @@ void PeripheralWinrt::GetDescriptorFromCharacteristic(
         .Completed([=](IAsyncOperation<GattDescriptorsResult> result, auto& status) {
             if (status == AsyncStatus::Completed)
             {
-                auto& descriptors = result.GetResults();
-                auto& descriptor = descriptors.Descriptors().First();
+                const auto& descriptors = result.GetResults();
+                const auto& descriptor = descriptors.Descriptors().First();
                 if (descriptor.HasCurrent())
                 {
                     GattDescriptor d = descriptor.Current();
